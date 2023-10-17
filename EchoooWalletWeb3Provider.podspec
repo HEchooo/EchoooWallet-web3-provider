@@ -16,11 +16,11 @@ Pod::Spec.new do |s|
   The magic behind the dApps browsers
                        DESC
 
-  s.homepage         = 'https://github.com/AlphaWallet/AlphaWalletWeb3Provider'
+  s.homepage         = 'https://github.com/EchoooWallet/EchoooWalletWeb3Provider'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'hewigovens' => 'hewigovens@gmail.com', 'Viktor Radchenko' => 'vikmeup' }
-  s.source           = { :git => 'https://github.com/AlphaWallet/AlphaWalletWeb3Provider.git', :tag => s.version.to_s }
-  s.social_media_url = 'https://twitter.com/AlphaWallet'
+  s.source           = { :git => 'https://github.com/HEchooo/EchoooWallet-web3-provider.git', :tag => s.version.to_s }
+  s.social_media_url = 'https://twitter.com/EchoooWallet'
   s.ios.deployment_target = '8.0'
 
   s.resource_bundles = {

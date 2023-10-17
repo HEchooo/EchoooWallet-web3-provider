@@ -7,7 +7,7 @@ const gulp            = require('gulp'),
       size            = require('gulp-size'),
       source          = require('vinyl-source-stream'),
       config = {
-          name: 'AlphaWallet',
+          name: 'EchoooWallet',
           fileTypes: {
             all: '**/*',
             js: '**/*.js',
@@ -54,7 +54,7 @@ gulp.task('bundle:javascript', gulp.series('javascript', function () {
   .pipe(buffer())
   .pipe(minify({
     mangle: {
-      reserved: [ 'AlphaWalletWeb3Provider' ]
+      reserved: [ 'EchoooWalletWeb3Provider' ]
     }
   }))
   .pipe(size())

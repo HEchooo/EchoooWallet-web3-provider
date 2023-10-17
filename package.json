@@ -1,5 +1,5 @@
 {
-  "name": "AlphaWalletWeb3Provider",
+  "name": "EchoooWalletWeb3Provider",
   "version": "0.0.5",
   "description": "web3 injection",
   "main": "index.js",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:cryptape/AlphaWallet-Android.git"
+    "url": "git@github.com:HEchooo/EchoooWallet-web3-provider.git"
   },
   "keywords": [
     "ethereum",

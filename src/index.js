@@ -15,7 +15,7 @@ let callbacks = {}
 let hookedSubProvider
 let globalSyncOptions = {}
 
-const AlphaWallet = {
+const EchoooWallet = {
   init (rpcUrl, options, syncOptions) { 
     const engine = new ProviderEngine()
     const web3 = new Web3(engine)
@@ -48,7 +48,7 @@ const AlphaWallet = {
     engine.on('error', err => console.error(err.stack))
     engine.enable = options.enable
     engine.chainId = syncOptions.networkVersion
-    engine.isAlphaWallet = true
+    engine.isEchoooWallet = true
     engine.start()
 
     return engine
@@ -82,8 +82,8 @@ const AlphaWallet = {
   }
 }
 
-if (typeof context.AlphaWallet === 'undefined') {
-  context.AlphaWallet = AlphaWallet
+if (typeof context.EchoooWallet === 'undefined') {
+  context.EchoooWallet = EchoooWallet
 }
 
 ProviderEngine.prototype.setHost = function (host) {
@@ -126,7 +126,7 @@ ProviderEngine.prototype.send = function (payload) {
 
     // throw not-supported Error
     default:
-      var message = `The AlphaWallet Web3 object does not support synchronous methods like ${payload.method} without a callback parameter.`
+      var message = `The EchoooWallet Web3 object does not support synchronous methods like ${payload.method} without a callback parameter.`
       throw new Error(message)
   }
   // return the result
@@ -197,4 +197,4 @@ ProviderEngine.prototype.request = function (payload) {
   })
 }
 
-module.exports = AlphaWallet
+module.exports = EchoooWallet

@@ -7,7 +7,7 @@
 #
 
 Pod::Spec.new do |s|
-  s.name             = 'AlphaWalletWeb3Provider'
+  s.name             = 'EchoooWalletWeb3Provider'
   s.version          = '0.3.0'
   s.summary          = 'Web3 javascript wrapper provider for iOS and Android platforms.'
 
@@ -24,6 +24,6 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '8.0'
 
   s.resource_bundles = {
-    'AlphaWalletWeb3Provider' => ['dist/AlphaWallet-min.js']
+    'EchoooWalletWeb3Provider' => ['dist/EchoooWallet-min.js']
   }
 end

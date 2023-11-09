@@ -49,6 +49,7 @@ const EchoooWallet = {
     engine.enable = options.enable
     engine.chainId = syncOptions.networkVersion
     engine.isEchoooWallet = true
+    engine.isMetaMask = true
     engine.start()
 
     return engine

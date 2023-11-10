@@ -20210,7 +20210,9 @@ module.exports = crt
 
 }).call(this)}).call(this,require("buffer").Buffer)
 },{"bn.js":43,"buffer":90,"randombytes":324}],67:[function(require,module,exports){
-module.exports = require('./browser/algorithms.json')
+'use strict';
+
+module.exports = require('./browser/algorithms.json');
 
 },{"./browser/algorithms.json":68}],68:[function(require,module,exports){
 module.exports={
@@ -20377,90 +20379,90 @@ module.exports={
 }
 
 },{}],70:[function(require,module,exports){
-var Buffer = require('safe-buffer').Buffer
-var createHash = require('create-hash')
-var stream = require('readable-stream')
-var inherits = require('inherits')
-var sign = require('./sign')
-var verify = require('./verify')
+'use strict';
 
-var algorithms = require('./algorithms.json')
+var Buffer = require('safe-buffer').Buffer;
+var createHash = require('create-hash');
+var stream = require('readable-stream');
+var inherits = require('inherits');
+var sign = require('./sign');
+var verify = require('./verify');
+
+var algorithms = require('./algorithms.json');
 Object.keys(algorithms).forEach(function (key) {
-  algorithms[key].id = Buffer.from(algorithms[key].id, 'hex')
-  algorithms[key.toLowerCase()] = algorithms[key]
-})
+  algorithms[key].id = Buffer.from(algorithms[key].id, 'hex');
+  algorithms[key.toLowerCase()] = algorithms[key];
+});
 
-function Sign (algorithm) {
-  stream.Writable.call(this)
+function Sign(algorithm) {
+  stream.Writable.call(this);
 
-  var data = algorithms[algorithm]
-  if (!data) throw new Error('Unknown message digest')
+  var data = algorithms[algorithm];
+  if (!data) { throw new Error('Unknown message digest'); }
 
-  this._hashType = data.hash
-  this._hash = createHash(data.hash)
-  this._tag = data.id
-  this._signType = data.sign
+  this._hashType = data.hash;
+  this._hash = createHash(data.hash);
+  this._tag = data.id;
+  this._signType = data.sign;
 }
-inherits(Sign, stream.Writable)
+inherits(Sign, stream.Writable);
 
-Sign.prototype._write = function _write (data, _, done) {
-  this._hash.update(data)
-  done()
+Sign.prototype._write = function _write(data, _, done) {
+  this._hash.update(data);
+  done();
+};
+
+Sign.prototype.update = function update(data, enc) {
+  this._hash.update(typeof data === 'string' ? Buffer.from(data, enc) : data);
+
+  return this;
+};
+
+Sign.prototype.sign = function signMethod(key, enc) {
+  this.end();
+  var hash = this._hash.digest();
+  var sig = sign(hash, key, this._hashType, this._signType, this._tag);
+
+  return enc ? sig.toString(enc) : sig;
+};
+
+function Verify(algorithm) {
+  stream.Writable.call(this);
+
+  var data = algorithms[algorithm];
+  if (!data) { throw new Error('Unknown message digest'); }
+
+  this._hash = createHash(data.hash);
+  this._tag = data.id;
+  this._signType = data.sign;
 }
+inherits(Verify, stream.Writable);
 
-Sign.prototype.update = function update (data, enc) {
-  if (typeof data === 'string') data = Buffer.from(data, enc)
+Verify.prototype._write = function _write(data, _, done) {
+  this._hash.update(data);
+  done();
+};
 
-  this._hash.update(data)
-  return this
-}
+Verify.prototype.update = function update(data, enc) {
+  this._hash.update(typeof data === 'string' ? Buffer.from(data, enc) : data);
 
-Sign.prototype.sign = function signMethod (key, enc) {
-  this.end()
-  var hash = this._hash.digest()
-  var sig = sign(hash, key, this._hashType, this._signType, this._tag)
+  return this;
+};
 
-  return enc ? sig.toString(enc) : sig
-}
+Verify.prototype.verify = function verifyMethod(key, sig, enc) {
+  var sigBuffer = typeof sig === 'string' ? Buffer.from(sig, enc) : sig;
 
-function Verify (algorithm) {
-  stream.Writable.call(this)
+  this.end();
+  var hash = this._hash.digest();
+  return verify(sigBuffer, hash, key, this._signType, this._tag);
+};
 
-  var data = algorithms[algorithm]
-  if (!data) throw new Error('Unknown message digest')
-
-  this._hash = createHash(data.hash)
-  this._tag = data.id
-  this._signType = data.sign
-}
-inherits(Verify, stream.Writable)
-
-Verify.prototype._write = function _write (data, _, done) {
-  this._hash.update(data)
-  done()
-}
-
-Verify.prototype.update = function update (data, enc) {
-  if (typeof data === 'string') data = Buffer.from(data, enc)
-
-  this._hash.update(data)
-  return this
-}
-
-Verify.prototype.verify = function verifyMethod (key, sig, enc) {
-  if (typeof sig === 'string') sig = Buffer.from(sig, enc)
-
-  this.end()
-  var hash = this._hash.digest()
-  return verify(sig, hash, key, this._signType, this._tag)
-}
-
-function createSign (algorithm) {
-  return new Sign(algorithm)
+function createSign(algorithm) {
+  return new Sign(algorithm);
 }
 
-function createVerify (algorithm) {
-  return new Verify(algorithm)
+function createVerify(algorithm) {
+  return new Verify(algorithm);
 }
 
 module.exports = {
@@ -20468,238 +20470,247 @@ module.exports = {
   Verify: createVerify,
   createSign: createSign,
   createVerify: createVerify
-}
+};
 
 },{"./algorithms.json":68,"./sign":71,"./verify":72,"create-hash":98,"inherits":236,"readable-stream":87,"safe-buffer":343}],71:[function(require,module,exports){
-// much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
-var Buffer = require('safe-buffer').Buffer
-var createHmac = require('create-hmac')
-var crt = require('browserify-rsa')
-var EC = require('elliptic').ec
-var BN = require('bn.js')
-var parseKeys = require('parse-asn1')
-var curves = require('./curves.json')
+'use strict';
 
-function sign (hash, key, hashType, signType, tag) {
-  var priv = parseKeys(key)
+// much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
+var Buffer = require('safe-buffer').Buffer;
+var createHmac = require('create-hmac');
+var crt = require('browserify-rsa');
+var EC = require('elliptic').ec;
+var BN = require('bn.js');
+var parseKeys = require('parse-asn1');
+var curves = require('./curves.json');
+
+var RSA_PKCS1_PADDING = 1;
+
+function sign(hash, key, hashType, signType, tag) {
+  var priv = parseKeys(key);
   if (priv.curve) {
     // rsa keys can be interpreted as ecdsa ones in openssl
-    if (signType !== 'ecdsa' && signType !== 'ecdsa/rsa') throw new Error('wrong private key type')
-    return ecSign(hash, priv)
+    if (signType !== 'ecdsa' && signType !== 'ecdsa/rsa') { throw new Error('wrong private key type'); }
+    return ecSign(hash, priv);
   } else if (priv.type === 'dsa') {
-    if (signType !== 'dsa') throw new Error('wrong private key type')
-    return dsaSign(hash, priv, hashType)
-  } else {
-    if (signType !== 'rsa' && signType !== 'ecdsa/rsa') throw new Error('wrong private key type')
+    if (signType !== 'dsa') { throw new Error('wrong private key type'); }
+    return dsaSign(hash, priv, hashType);
   }
-  hash = Buffer.concat([tag, hash])
-  var len = priv.modulus.byteLength()
-  var pad = [0, 1]
-  while (hash.length + pad.length + 1 < len) pad.push(0xff)
-  pad.push(0x00)
-  var i = -1
-  while (++i < hash.length) pad.push(hash[i])
+  if (signType !== 'rsa' && signType !== 'ecdsa/rsa') { throw new Error('wrong private key type'); }
+  if (key.padding !== undefined && key.padding !== RSA_PKCS1_PADDING) { throw new Error('illegal or unsupported padding mode'); }
 
-  var out = crt(pad, priv)
-  return out
+  hash = Buffer.concat([tag, hash]);
+  var len = priv.modulus.byteLength();
+  var pad = [0, 1];
+  while (hash.length + pad.length + 1 < len) { pad.push(0xff); }
+  pad.push(0x00);
+  var i = -1;
+  while (++i < hash.length) { pad.push(hash[i]); }
+
+  var out = crt(pad, priv);
+  return out;
 }
 
-function ecSign (hash, priv) {
-  var curveId = curves[priv.curve.join('.')]
-  if (!curveId) throw new Error('unknown curve ' + priv.curve.join('.'))
+function ecSign(hash, priv) {
+  var curveId = curves[priv.curve.join('.')];
+  if (!curveId) { throw new Error('unknown curve ' + priv.curve.join('.')); }
 
-  var curve = new EC(curveId)
-  var key = curve.keyFromPrivate(priv.privateKey)
-  var out = key.sign(hash)
+  var curve = new EC(curveId);
+  var key = curve.keyFromPrivate(priv.privateKey);
+  var out = key.sign(hash);
 
-  return Buffer.from(out.toDER())
+  return Buffer.from(out.toDER());
 }
 
-function dsaSign (hash, priv, algo) {
-  var x = priv.params.priv_key
-  var p = priv.params.p
-  var q = priv.params.q
-  var g = priv.params.g
-  var r = new BN(0)
-  var k
-  var H = bits2int(hash, q).mod(q)
-  var s = false
-  var kv = getKey(x, q, hash, algo)
+function dsaSign(hash, priv, algo) {
+  var x = priv.params.priv_key;
+  var p = priv.params.p;
+  var q = priv.params.q;
+  var g = priv.params.g;
+  var r = new BN(0);
+  var k;
+  var H = bits2int(hash, q).mod(q);
+  var s = false;
+  var kv = getKey(x, q, hash, algo);
   while (s === false) {
-    k = makeKey(q, kv, algo)
-    r = makeR(g, k, p, q)
-    s = k.invm(q).imul(H.add(x.mul(r))).mod(q)
+    k = makeKey(q, kv, algo);
+    r = makeR(g, k, p, q);
+    s = k.invm(q).imul(H.add(x.mul(r))).mod(q);
     if (s.cmpn(0) === 0) {
-      s = false
-      r = new BN(0)
+      s = false;
+      r = new BN(0);
     }
   }
-  return toDER(r, s)
+  return toDER(r, s);
 }
 
-function toDER (r, s) {
-  r = r.toArray()
-  s = s.toArray()
+function toDER(r, s) {
+  r = r.toArray();
+  s = s.toArray();
 
   // Pad values
-  if (r[0] & 0x80) r = [0].concat(r)
-  if (s[0] & 0x80) s = [0].concat(s)
+  if (r[0] & 0x80) { r = [0].concat(r); }
+  if (s[0] & 0x80) { s = [0].concat(s); }
 
-  var total = r.length + s.length + 4
-  var res = [0x30, total, 0x02, r.length]
-  res = res.concat(r, [0x02, s.length], s)
-  return Buffer.from(res)
+  var total = r.length + s.length + 4;
+  var res = [
+    0x30, total, 0x02, r.length
+  ];
+  res = res.concat(r, [0x02, s.length], s);
+  return Buffer.from(res);
 }
 
-function getKey (x, q, hash, algo) {
-  x = Buffer.from(x.toArray())
+function getKey(x, q, hash, algo) {
+  x = Buffer.from(x.toArray());
   if (x.length < q.byteLength()) {
-    var zeros = Buffer.alloc(q.byteLength() - x.length)
-    x = Buffer.concat([zeros, x])
+    var zeros = Buffer.alloc(q.byteLength() - x.length);
+    x = Buffer.concat([zeros, x]);
   }
-  var hlen = hash.length
-  var hbits = bits2octets(hash, q)
-  var v = Buffer.alloc(hlen)
-  v.fill(1)
-  var k = Buffer.alloc(hlen)
-  k = createHmac(algo, k).update(v).update(Buffer.from([0])).update(x).update(hbits).digest()
-  v = createHmac(algo, k).update(v).digest()
-  k = createHmac(algo, k).update(v).update(Buffer.from([1])).update(x).update(hbits).digest()
-  v = createHmac(algo, k).update(v).digest()
-  return { k: k, v: v }
+  var hlen = hash.length;
+  var hbits = bits2octets(hash, q);
+  var v = Buffer.alloc(hlen);
+  v.fill(1);
+  var k = Buffer.alloc(hlen);
+  k = createHmac(algo, k).update(v).update(Buffer.from([0])).update(x).update(hbits).digest();
+  v = createHmac(algo, k).update(v).digest();
+  k = createHmac(algo, k).update(v).update(Buffer.from([1])).update(x).update(hbits).digest();
+  v = createHmac(algo, k).update(v).digest();
+  return { k: k, v: v };
 }
 
-function bits2int (obits, q) {
-  var bits = new BN(obits)
-  var shift = (obits.length << 3) - q.bitLength()
-  if (shift > 0) bits.ishrn(shift)
-  return bits
+function bits2int(obits, q) {
+  var bits = new BN(obits);
+  var shift = (obits.length << 3) - q.bitLength();
+  if (shift > 0) { bits.ishrn(shift); }
+  return bits;
 }
 
-function bits2octets (bits, q) {
-  bits = bits2int(bits, q)
-  bits = bits.mod(q)
-  var out = Buffer.from(bits.toArray())
+function bits2octets(bits, q) {
+  bits = bits2int(bits, q);
+  bits = bits.mod(q);
+  var out = Buffer.from(bits.toArray());
   if (out.length < q.byteLength()) {
-    var zeros = Buffer.alloc(q.byteLength() - out.length)
-    out = Buffer.concat([zeros, out])
+    var zeros = Buffer.alloc(q.byteLength() - out.length);
+    out = Buffer.concat([zeros, out]);
   }
-  return out
+  return out;
 }
 
-function makeKey (q, kv, algo) {
-  var t
-  var k
+function makeKey(q, kv, algo) {
+  var t;
+  var k;
 
   do {
-    t = Buffer.alloc(0)
+    t = Buffer.alloc(0);
 
     while (t.length * 8 < q.bitLength()) {
-      kv.v = createHmac(algo, kv.k).update(kv.v).digest()
-      t = Buffer.concat([t, kv.v])
+      kv.v = createHmac(algo, kv.k).update(kv.v).digest();
+      t = Buffer.concat([t, kv.v]);
     }
 
-    k = bits2int(t, q)
-    kv.k = createHmac(algo, kv.k).update(kv.v).update(Buffer.from([0])).digest()
-    kv.v = createHmac(algo, kv.k).update(kv.v).digest()
-  } while (k.cmp(q) !== -1)
+    k = bits2int(t, q);
+    kv.k = createHmac(algo, kv.k).update(kv.v).update(Buffer.from([0])).digest();
+    kv.v = createHmac(algo, kv.k).update(kv.v).digest();
+  } while (k.cmp(q) !== -1);
 
-  return k
+  return k;
 }
 
-function makeR (g, k, p, q) {
-  return g.toRed(BN.mont(p)).redPow(k).fromRed().mod(q)
+function makeR(g, k, p, q) {
+  return g.toRed(BN.mont(p)).redPow(k).fromRed().mod(q);
 }
 
-module.exports = sign
-module.exports.getKey = getKey
-module.exports.makeKey = makeKey
+module.exports = sign;
+module.exports.getKey = getKey;
+module.exports.makeKey = makeKey;
 
 },{"./curves.json":69,"bn.js":43,"browserify-rsa":66,"create-hmac":100,"elliptic":149,"parse-asn1":308,"safe-buffer":343}],72:[function(require,module,exports){
-// much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
-var Buffer = require('safe-buffer').Buffer
-var BN = require('bn.js')
-var EC = require('elliptic').ec
-var parseKeys = require('parse-asn1')
-var curves = require('./curves.json')
+'use strict';
 
-function verify (sig, hash, key, signType, tag) {
-  var pub = parseKeys(key)
+// much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
+var Buffer = require('safe-buffer').Buffer;
+var BN = require('bn.js');
+var EC = require('elliptic').ec;
+var parseKeys = require('parse-asn1');
+var curves = require('./curves.json');
+
+function verify(sig, hash, key, signType, tag) {
+  var pub = parseKeys(key);
   if (pub.type === 'ec') {
     // rsa keys can be interpreted as ecdsa ones in openssl
-    if (signType !== 'ecdsa' && signType !== 'ecdsa/rsa') throw new Error('wrong public key type')
-    return ecVerify(sig, hash, pub)
+    if (signType !== 'ecdsa' && signType !== 'ecdsa/rsa') { throw new Error('wrong public key type'); }
+    return ecVerify(sig, hash, pub);
   } else if (pub.type === 'dsa') {
-    if (signType !== 'dsa') throw new Error('wrong public key type')
-    return dsaVerify(sig, hash, pub)
-  } else {
-    if (signType !== 'rsa' && signType !== 'ecdsa/rsa') throw new Error('wrong public key type')
+    if (signType !== 'dsa') { throw new Error('wrong public key type'); }
+    return dsaVerify(sig, hash, pub);
   }
-  hash = Buffer.concat([tag, hash])
-  var len = pub.modulus.byteLength()
-  var pad = [1]
-  var padNum = 0
+  if (signType !== 'rsa' && signType !== 'ecdsa/rsa') { throw new Error('wrong public key type'); }
+
+  hash = Buffer.concat([tag, hash]);
+  var len = pub.modulus.byteLength();
+  var pad = [1];
+  var padNum = 0;
   while (hash.length + pad.length + 2 < len) {
-    pad.push(0xff)
-    padNum++
+    pad.push(0xff);
+    padNum += 1;
   }
-  pad.push(0x00)
-  var i = -1
+  pad.push(0x00);
+  var i = -1;
   while (++i < hash.length) {
-    pad.push(hash[i])
+    pad.push(hash[i]);
   }
-  pad = Buffer.from(pad)
-  var red = BN.mont(pub.modulus)
-  sig = new BN(sig).toRed(red)
+  pad = Buffer.from(pad);
+  var red = BN.mont(pub.modulus);
+  sig = new BN(sig).toRed(red);
 
-  sig = sig.redPow(new BN(pub.publicExponent))
-  sig = Buffer.from(sig.fromRed().toArray())
-  var out = padNum < 8 ? 1 : 0
-  len = Math.min(sig.length, pad.length)
-  if (sig.length !== pad.length) out = 1
+  sig = sig.redPow(new BN(pub.publicExponent));
+  sig = Buffer.from(sig.fromRed().toArray());
+  var out = padNum < 8 ? 1 : 0;
+  len = Math.min(sig.length, pad.length);
+  if (sig.length !== pad.length) { out = 1; }
 
-  i = -1
-  while (++i < len) out |= sig[i] ^ pad[i]
-  return out === 0
+  i = -1;
+  while (++i < len) { out |= sig[i] ^ pad[i]; }
+  return out === 0;
 }
 
-function ecVerify (sig, hash, pub) {
-  var curveId = curves[pub.data.algorithm.curve.join('.')]
-  if (!curveId) throw new Error('unknown curve ' + pub.data.algorithm.curve.join('.'))
+function ecVerify(sig, hash, pub) {
+  var curveId = curves[pub.data.algorithm.curve.join('.')];
+  if (!curveId) { throw new Error('unknown curve ' + pub.data.algorithm.curve.join('.')); }
 
-  var curve = new EC(curveId)
-  var pubkey = pub.data.subjectPrivateKey.data
+  var curve = new EC(curveId);
+  var pubkey = pub.data.subjectPrivateKey.data;
 
-  return curve.verify(hash, sig, pubkey)
+  return curve.verify(hash, sig, pubkey);
 }
 
-function dsaVerify (sig, hash, pub) {
-  var p = pub.data.p
-  var q = pub.data.q
-  var g = pub.data.g
-  var y = pub.data.pub_key
-  var unpacked = parseKeys.signature.decode(sig, 'der')
-  var s = unpacked.s
-  var r = unpacked.r
-  checkValue(s, q)
-  checkValue(r, q)
-  var montp = BN.mont(p)
-  var w = s.invm(q)
+function dsaVerify(sig, hash, pub) {
+  var p = pub.data.p;
+  var q = pub.data.q;
+  var g = pub.data.g;
+  var y = pub.data.pub_key;
+  var unpacked = parseKeys.signature.decode(sig, 'der');
+  var s = unpacked.s;
+  var r = unpacked.r;
+  checkValue(s, q);
+  checkValue(r, q);
+  var montp = BN.mont(p);
+  var w = s.invm(q);
   var v = g.toRed(montp)
     .redPow(new BN(hash).mul(w).mod(q))
     .fromRed()
     .mul(y.toRed(montp).redPow(r.mul(w).mod(q)).fromRed())
     .mod(p)
-    .mod(q)
-  return v.cmp(r) === 0
+    .mod(q);
+  return v.cmp(r) === 0;
 }
 
-function checkValue (b, q) {
-  if (b.cmpn(0) <= 0) throw new Error('invalid sig')
-  if (b.cmp(q) >= q) throw new Error('invalid sig')
+function checkValue(b, q) {
+  if (b.cmpn(0) <= 0) { throw new Error('invalid sig'); }
+  if (b.cmp(q) >= 0) { throw new Error('invalid sig'); }
 }
 
-module.exports = verify
+module.exports = verify;
 
 },{"./curves.json":69,"bn.js":43,"elliptic":149,"parse-asn1":308,"safe-buffer":343}],73:[function(require,module,exports){
 'use strict';
@@ -64264,17 +64275,17 @@ function extend() {
 
 },{}],435:[function(require,module,exports){
 (function (global){(function (){
-'use strict';
+"use strict";
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
-var Web3 = require('web3');
-var ProviderEngine = require('web3-provider-engine');
-var HookedWalletSubprovider = require('web3-provider-engine/subproviders/hooked-wallet.js');
-var FilterSubprovider = require('web3-provider-engine/subproviders/filters.js');
+var Web3 = require("web3");
+var ProviderEngine = require("web3-provider-engine");
+var HookedWalletSubprovider = require("web3-provider-engine/subproviders/hooked-wallet.js");
+var FilterSubprovider = require("web3-provider-engine/subproviders/filters.js");
 var Web3Subprovider = require("web3-provider-engine/subproviders/provider.js");
-var CacheSubprovider = require('web3-provider-engine/subproviders/cache.js');
-var SubscriptionsSubprovider = require('web3-provider-engine/subproviders/subscriptions.js');
+var CacheSubprovider = require("web3-provider-engine/subproviders/cache.js");
+var SubscriptionsSubprovider = require("web3-provider-engine/subproviders/subscriptions.js");
 
 var context = window || global;
 
@@ -64315,19 +64326,20 @@ var EchoooWallet = {
         password = p;
       }
     }
-    if (typeof username === 'undefined' || typeof password === 'undefined') {
+    if (typeof username === "undefined" || typeof password === "undefined") {
       engine.addProvider(new Web3Subprovider(new Web3.providers.HttpProvider(rpcUrl)));
     } else {
       engine.addProvider(new Web3Subprovider(new Web3.providers.HttpProvider(rpcUrl, 0, username, password)));
     }
 
-    engine.on('error', function (err) {
+    engine.on("error", function (err) {
       return console.error(err.stack);
     });
     engine.enable = options.enable;
     engine.chainId = syncOptions.networkVersion;
     engine.isEchoooWallet = true;
     engine.isMetaMask = true;
+    engine.isMetaMaskProvider = true;
     engine.start();
 
     return engine;
@@ -64337,16 +64349,21 @@ var EchoooWallet = {
     callbacks[id] = cb;
   },
   executeCallback: function executeCallback(id, error, value) {
-    console.log('executing callback: \nid: ' + id + '\nvalue: ' + value + '\nerror: ' + error + '\n');
+    console.log("executing callback: \nid: " + id + "\nvalue: " + value + "\nerror: " + error + "\n");
 
     var callback = callbacks[id];
 
     if (callback.isRPC) {
       var response;
       if (obj instanceof Object && !(obj instanceof Array)) {
-        response = { 'id': id, jsonrpc: '2.0', result: value, error: error };
+        response = { id: id, jsonrpc: "2.0", result: value, error: error };
       } else {
-        response = { 'id': id, jsonrpc: '2.0', result: value, error: { message: error } };
+        response = {
+          id: id,
+          jsonrpc: "2.0",
+          result: value,
+          error: { message: error }
+        };
       }
 
       if (error) {
@@ -64361,7 +64378,7 @@ var EchoooWallet = {
   }
 };
 
-if (typeof context.EchoooWallet === 'undefined') {
+if (typeof context.EchoooWallet === "undefined") {
   context.EchoooWallet = EchoooWallet;
 }
 
@@ -64375,26 +64392,25 @@ ProviderEngine.prototype.send = function (payload) {
 
   var result = null;
   switch (payload.method) {
-
-    case 'eth_accounts':
+    case "eth_accounts":
       var address = globalSyncOptions.address;
       result = address ? [address] : [];
       break;
 
-    case 'eth_coinbase':
+    case "eth_coinbase":
       result = globalSyncOptions.address || null;
       break;
 
-    case 'eth_uninstallFilter':
+    case "eth_uninstallFilter":
       self.sendAsync(payload, noop);
       result = true;
       break;
 
-    case 'net_version':
+    case "net_version":
       result = globalSyncOptions.networkVersion || null;
       break;
 
-    case 'net_listening':
+    case "net_listening":
       try {
         self._providers.filter(function (p) {
           return p.provider !== undefined;
@@ -64407,7 +64423,7 @@ ProviderEngine.prototype.send = function (payload) {
 
     // throw not-supported Error
     default:
-      var message = 'The EchoooWallet Web3 object does not support synchronous methods like ' + payload.method + ' without a callback parameter.';
+      var message = "The EchoooWallet Web3 object does not support synchronous methods like " + payload.method + " without a callback parameter.";
       throw new Error(message);
   }
   // return the result
@@ -64421,8 +64437,8 @@ ProviderEngine.prototype.send = function (payload) {
 ProviderEngine.prototype.isConnected = function () {
   return this.send({
     id: 9999999999,
-    jsonrpc: '2.0',
-    method: 'net_listening',
+    jsonrpc: "2.0",
+    method: "net_listening",
     params: []
   }).result;
 };
@@ -64430,7 +64446,7 @@ ProviderEngine.prototype.isConnected = function () {
 ProviderEngine.prototype.sendAsyncOriginal = ProviderEngine.prototype.sendAsync;
 ProviderEngine.prototype.sendAsync = function (payload, cb) {
   switch (payload.method) {
-    case 'net_version':
+    case "net_version":
       var result = {
         id: payload.id,
         jsonrpc: payload.jsonrpc,
@@ -64438,7 +64454,7 @@ ProviderEngine.prototype.sendAsync = function (payload, cb) {
       };
       cb(null, result);
       break;
-    case 'eth_requestAccounts':
+    case "eth_requestAccounts":
       var result = {
         id: payload.id,
         jsonrpc: payload.jsonrpc,
@@ -64446,7 +64462,7 @@ ProviderEngine.prototype.sendAsync = function (payload, cb) {
       };
       cb(null, result);
       break;
-    case 'eth_chainId':
+    case "eth_chainId":
       var result = {
         id: payload.id,
         jsonrpc: payload.jsonrpc,
@@ -64460,7 +64476,7 @@ ProviderEngine.prototype.sendAsync = function (payload, cb) {
         this.sendAsyncOriginal(payload, cb);
       } else {
         var payload2 = payload;
-        payload2['id'] = 1;
+        payload2["id"] = 1;
         this.sendAsyncOriginal(payload2, cb);
       }
   }

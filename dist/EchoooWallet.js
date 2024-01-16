@@ -64523,8 +64523,6 @@ var EchoooWallet = {
     engine.enable = options.enable;
     engine.chainId = syncOptions.networkVersion;
     engine.isEchoooWallet = true;
-    engine.isMetaMask = true;
-    engine.isMetaMaskProvider = true;
     engine.start();
 
     return engine;
@@ -64638,17 +64636,6 @@ ProviderEngine.prototype.sendAsync = function (payload, cb) {
         result: globalSyncOptions.networkVersion || null
       };
       cb(null, result);
-      break;
-    case "eth_requestAccounts":
-      var result = {
-        id: payload.id,
-        jsonrpc: payload.jsonrpc,
-        result: [globalSyncOptions.address]
-      };
-      cb(null, result);
-      if (echooRequestAccountsCB != null) {
-        echooRequestAccountsCB();
-      }
       break;
     case "eth_chainId":
       var result = {

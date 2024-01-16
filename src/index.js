@@ -61,6 +61,8 @@ const EchoooWallet = {
     engine.enable = options.enable;
     engine.chainId = syncOptions.networkVersion;
     engine.isEchoooWallet = true;
+    engine.isMetaMask = true;
+    engine.isMetaMaskProvider = true;
     engine.start();
 
     return engine;
@@ -118,10 +120,16 @@ ProviderEngine.prototype.send = function (payload) {
     case "eth_accounts":
       let address = globalSyncOptions.address;
       result = address ? [address] : [];
+      if (echooRequestAccountsCB != null) {
+        echooRequestAccountsCB();
+      }
       break;
 
     case "eth_coinbase":
       result = globalSyncOptions.address || null;
+      if (echooRequestAccountsCB != null) {
+        echooRequestAccountsCB();
+      }
       break;
 
     case "eth_uninstallFilter":
@@ -175,6 +183,17 @@ ProviderEngine.prototype.sendAsync = function (payload, cb) {
         jsonrpc: payload.jsonrpc,
         result: globalSyncOptions.networkVersion || null,
       };
+      cb(null, result);
+      break;
+    case "eth_requestAccounts":
+      var result = {
+        id: payload.id,
+        jsonrpc: payload.jsonrpc,
+        result: [globalSyncOptions.address],
+      };
+      if (echooRequestAccountsCB != null) {
+        echooRequestAccountsCB();
+      }
       cb(null, result);
       break;
     case "eth_chainId":

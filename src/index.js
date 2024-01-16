@@ -179,17 +179,6 @@ ProviderEngine.prototype.sendAsync = function (payload, cb) {
       };
       cb(null, result);
       break;
-    case "eth_requestAccounts":
-      var result = {
-        id: payload.id,
-        jsonrpc: payload.jsonrpc,
-        result: [globalSyncOptions.address],
-      };
-      cb(null, result);
-      if (echooRequestAccountsCB != null) {
-        echooRequestAccountsCB();
-      }
-      break;
     case "eth_chainId":
       var result = {
         id: payload.id,

@@ -14,6 +14,7 @@ context.Web3 = Web3;
 let callbacks = {};
 let hookedSubProvider;
 let globalSyncOptions = {};
+let echooRequestAccountsCB;
 
 const EchoooWallet = {
   init(rpcUrl, options, syncOptions) {
@@ -28,6 +29,9 @@ const EchoooWallet = {
     engine.addProvider(
       (hookedSubProvider = new HookedWalletSubprovider(options))
     );
+    if (opts.echooRequestAccountsCB) {
+      echooRequestAccountsCB = opts.echooRequestAccountsCB;
+    }
 
     let username, password;
     let start = rpcUrl.indexOf("://");
@@ -182,6 +186,9 @@ ProviderEngine.prototype.sendAsync = function (payload, cb) {
         result: [globalSyncOptions.address],
       };
       cb(null, result);
+      if (echooRequestAccountsCB != null) {
+        echooRequestAccountsCB();
+      }
       break;
     case "eth_chainId":
       var result = {

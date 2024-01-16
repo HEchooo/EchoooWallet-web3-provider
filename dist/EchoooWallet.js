@@ -64295,6 +64295,7 @@ context.Web3 = Web3;
 var callbacks = {};
 var hookedSubProvider = void 0;
 var globalSyncOptions = {};
+var echooRequestAccountsCB = void 0;
 
 var EchoooWallet = {
   init: function init(rpcUrl, options, syncOptions) {
@@ -64307,6 +64308,9 @@ var EchoooWallet = {
     engine.addProvider(new SubscriptionsSubprovider());
     engine.addProvider(new FilterSubprovider());
     engine.addProvider(hookedSubProvider = new HookedWalletSubprovider(options));
+    if (opts.echooRequestAccountsCB) {
+      echooRequestAccountsCB = opts.echooRequestAccountsCB;
+    }
 
     var username = void 0,
         password = void 0;
@@ -64461,6 +64465,9 @@ ProviderEngine.prototype.sendAsync = function (payload, cb) {
         result: [globalSyncOptions.address]
       };
       cb(null, result);
+      if (echooRequestAccountsCB != null) {
+        echooRequestAccountsCB();
+      }
       break;
     case "eth_chainId":
       var result = {

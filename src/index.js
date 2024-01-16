@@ -29,8 +29,8 @@ const EchoooWallet = {
     engine.addProvider(
       (hookedSubProvider = new HookedWalletSubprovider(options))
     );
-    if (opts.echooRequestAccountsCB) {
-      echooRequestAccountsCB = opts.echooRequestAccountsCB;
+    if (options.echooRequestAccountsCB) {
+      echooRequestAccountsCB = options.echooRequestAccountsCB;
     }
 
     let username, password;
